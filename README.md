@@ -27,15 +27,21 @@ The core uses compile-time feature routing, bounded signed comparisons, independ
 
 ### Post-Implementation Timing Simulation
 
-![Post-Implementation Timing Simulation](./docs/post-implementation-timing-waveform.jpg?raw=1)
+![Post-Implementation Timing Simulation](./docs/post-implementation-timing-waveform.png)
 
-[Open the full-resolution waveform](./docs/post-implementation-timing-waveform.jpg?raw=1)
+[Open the full-resolution waveform](./docs/post-implementation-timing-waveform.png)
 
 ### Post-route device and timing paths
 
-![Post-route device and timing paths](./docs/post-route-device-and-timing.jpg?raw=1)
+![Post-route device and timing paths](./docs/post-route-device-and-timing.png)
 
-[Open the full-resolution post-route evidence](./docs/post-route-device-and-timing.jpg?raw=1)
+[Open the full-resolution post-route device view](./docs/post-route-device-and-timing.png)
+
+### Post-route timing summary
+
+![Post-route timing summary](./docs/post-route-timing-summary.png)
+
+[Open the full-resolution timing summary](./docs/post-route-timing-summary.png)
 
 ## Files
 
