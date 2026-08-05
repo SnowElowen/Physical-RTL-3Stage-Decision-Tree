@@ -27,11 +27,15 @@ The core uses compile-time feature routing, bounded signed comparisons, independ
 
 ### Post-Implementation Timing Simulation
 
-![Post-Implementation Timing Simulation](docs/post-implementation-timing-waveform.jpg)
+![Post-Implementation Timing Simulation](https://raw.githubusercontent.com/SnowElowen/Physical-RTL-4Stage-Decision-Tree/main/docs/post-implementation-timing-waveform.jpg)
+
+[Open the full-resolution waveform](https://github.com/SnowElowen/Physical-RTL-4Stage-Decision-Tree/blob/main/docs/post-implementation-timing-waveform.jpg)
 
 ### Post-route device and timing paths
 
-![Post-route device and timing paths](docs/post-route-device-and-timing.jpg)
+![Post-route device and timing paths](https://raw.githubusercontent.com/SnowElowen/Physical-RTL-4Stage-Decision-Tree/main/docs/post-route-device-and-timing.jpg)
+
+[Open the full-resolution post-route evidence](https://github.com/SnowElowen/Physical-RTL-4Stage-Decision-Tree/blob/main/docs/post-route-device-and-timing.jpg)
 
 ## Files
 
