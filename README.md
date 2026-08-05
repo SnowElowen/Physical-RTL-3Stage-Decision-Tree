@@ -2,116 +2,83 @@
 
 A reusable deterministic FPGA decision-tree inference core for AI Trader and other bounded real-time inference workloads.
 
-The design accepts four signed 16-bit fixed-point features, evaluates seven parallel threshold nodes, resolves one of eight leaves, and emits a registered `HOLD` / `BUY` / `SELL` decision.
+## Verified contract
 
-## Timing contract
+- Clock: **322.56 MHz** (`3.1002 ns`)
+- Latency: **4 cycles** from implemented Source FDRE/Q to registered Decision FDRE/Q
+- Registered latency: **12.4008 ns**
+- Throughput: **1 inference per cycle** after pipeline fill
+- Post-Implementation Timing Simulation: **8/8 leaves checked, 0 errors**
+- Post-route timing: **WNS +1.641 ns**, **WHS +0.043 ns**, **0 failing endpoints**
 
-The verified physical contract is measured from an implemented upstream Source `FDRE/Q` boundary to the registered decision `FDRE/Q` boundary:
+## Physical pipeline
 
 ```text
 Source FDRE/Q at cycle N
-  -> C1 feature capture
-  -> C2 parallel signed threshold comparison
-  -> C3 one-hot leaf decode
-  -> C4 registered action encode at cycle N+4
+  -> C1 fixed feature capture
+  -> C2 seven parallel signed threshold comparators
+  -> C3 eight one-hot leaf equations
+  -> C4 registered BUY / SELL / HOLD decision at cycle N+4
 ```
 
-At 322.56 MHz:
+The core uses compile-time feature routing, bounded signed comparisons, independent one-hot leaf decode equations and a registered action encoder. Users can replace feature selection, thresholds, leaf actions and verification vectors with parameters exported from their own AI training or calibration flow.
 
-```text
-Clock period: 3.1002 ns
-Latency:      4 cycles = 12.4008 ns
-Throughput:   1 inference per cycle after pipeline fill
-```
+## Evidence
 
-This is a four-cycle registered-source-to-registered-output contract. Counting only from the C1 sampling edge to the C4 output edge gives three elapsed clock periods across four registered stages.
+### Post-Implementation Timing Simulation
 
-## Architecture
+![Post-Implementation Timing Simulation](docs/post-implementation-timing-waveform.jpg)
 
-```text
-4 x signed 16-bit feature inputs
-  -> 64 FDRE feature capture
-  -> 7 parallel signed threshold comparators
-  -> 8 independent 3-input one-hot leaf equations
-  -> constant-folded BUY / SELL action encoder
-  -> registered 2-bit decision output
-```
+### Post-route device and timing paths
 
-The fast datapath contains no runtime feature selector, dynamic part-select, barrel shifter, FIFO, AXI fabric, BRAM lookup, variable iteration, or HLS scheduler. `NODE*_FEATURE`, `NODE*_THRESHOLD`, and `LEAF*_ACTION` are compile-time parameters.
+![Post-route device and timing paths](docs/post-route-device-and-timing.jpg)
 
 ## Files
 
-- `deterministic_tree_4stage.sv` — reusable synthesizable inference core
-- `deterministic_tree_4stage_verify_top.sv` — implemented Source-FDRE verification wrapper
-- `tb_deterministic_tree_4stage_verify_top.sv` — default eight-leaf self-checking testbench
-- `deterministic_tree_4stage_verify_top.xdc` — 322.56 MHz benchmark constraints
-- `create_project.tcl` — creates a clean Vivado 2022.2 project for ZU15EG
-
-## Use it for another AI tree
-
-Modify the core parameters:
-
-```systemverilog
-NODE0_FEATURE
-NODE1_FEATURE
-...
-NODE6_FEATURE
-
-NODE0_THRESHOLD
-NODE1_THRESHOLD
-...
-NODE6_THRESHOLD
-
-LEAF0_ACTION
-LEAF1_ACTION
-...
-LEAF7_ACTION
-```
-
-Feature indices select one of the four fixed feature lanes at elaboration time. Thresholds are signed 16-bit fixed-point values. Leaf action encoding is:
-
 ```text
-2'b00 = HOLD
-2'b01 = BUY
-2'b10 = SELL
-2'b11 = reserved
+deterministic_tree_4stage.sv
+    Synthesizable parameterized inference core.
+
+deterministic_tree_4stage_verify_top.sv
+    Implemented Source-FDRE verification wrapper.
+
+tb_deterministic_tree_4stage_verify_top.sv
+    Default eight-leaf reference testbench.
+
+deterministic_tree_4stage_verify_top.xdc
+    322.56 MHz benchmark constraints.
+
+create_project.tcl
+    Reproducible Vivado project setup.
 ```
 
-Replace the default vectors in `deterministic_tree_4stage_verify_top.sv` and the expected actions in the testbench when adapting the tree.
+## Vivado project
 
-## Reproduce the verification
-
-From the Vivado Tcl Console:
+Run from the Vivado Tcl Console:
 
 ```tcl
-source F:/path/to/Physical-RTL-4Stage-Decision-Tree/create_project.tcl
+source /absolute/path/to/create_project.tcl
 ```
 
-Correct project tops:
+The script sets:
 
 ```text
 Design Top     = deterministic_tree_4stage_verify_top
 Simulation Top = tb_deterministic_tree_4stage_verify_top
 ```
 
-Run:
+Then run Behavioral Simulation, Synthesis, Implementation and Post-Implementation Timing Simulation.
+
+## AI Trader integration
+
+A typical deployment places the trained bounded model inside the current-tick FPGA datapath:
 
 ```text
-Behavioral Simulation
-Synthesis
-Implementation
-Post-Implementation Timing Simulation
+Registered fixed-point features
+  -> deterministic_tree_4stage
+  -> registered decision
+  -> hard risk gate
+  -> order intent
 ```
 
-Expected simulator result:
-
-```text
-PASS: 8/8 leaves matched the exact four-cycle source-Q contract
-Latency = 4 cycles x 3.1002 ns = 12.4008 ns
-```
-
-## Target
-
-- Device: AMD/Xilinx Zynq UltraScale+ `xczu15eg-ffvb1156-2-i`
-- Tool: Vivado 2022.2
-- Benchmark clock: 322.56 MHz
+Training, feature selection and parameter calibration can remain in a Python or CPU control plane. The FPGA core performs the committed inference without a current-tick CPU round trip.
