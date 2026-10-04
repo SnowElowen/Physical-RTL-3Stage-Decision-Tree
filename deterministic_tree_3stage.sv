@@ -1,7 +1,7 @@
 `timescale 1ps / 1ps
 `default_nettype none
 
-module deterministic_tree_4stage #(
+module deterministic_tree_3stage #(
     parameter int unsigned NODE0_FEATURE = 0,
     parameter int unsigned NODE1_FEATURE = 1,
     parameter int unsigned NODE2_FEATURE = 1,
@@ -80,11 +80,10 @@ module deterministic_tree_4stage #(
 
     logic signed [15:0] feature_q [0:3];
     logic [6:0] compare_q;
-    logic [7:0] leaf_q;
+    logic [7:0] leaf_w;
     logic valid_c1_q;
     logic valid_c2_q;
-    logic valid_c3_q;
-
+    
     // C1: 64 FDRE feature capture.
     always_ff @(posedge clk_i) begin : p_c1_feature_capture
         feature_q[0] <= feature0_i;
@@ -104,36 +103,33 @@ module deterministic_tree_4stage #(
         compare_q[6] <= ($signed(feature_q[NODE6_FEATURE]) > $signed(NODE6_THRESHOLD));
     end
 
-    // C3: eight independent 3-input leaf equations.
-    always_ff @(posedge clk_i) begin : p_c3_onehot_leaf_decode
-        leaf_q[0] <= (~compare_q[0]) & (~compare_q[1]) & (~compare_q[3]);
-        leaf_q[1] <= (~compare_q[0]) & (~compare_q[1]) & ( compare_q[3]);
-        leaf_q[2] <= (~compare_q[0]) & ( compare_q[1]) & (~compare_q[4]);
-        leaf_q[3] <= (~compare_q[0]) & ( compare_q[1]) & ( compare_q[4]);
-        leaf_q[4] <= ( compare_q[0]) & (~compare_q[2]) & (~compare_q[5]);
-        leaf_q[5] <= ( compare_q[0]) & (~compare_q[2]) & ( compare_q[5]);
-        leaf_q[6] <= ( compare_q[0]) & ( compare_q[2]) & (~compare_q[6]);
-        leaf_q[7] <= ( compare_q[0]) & ( compare_q[2]) & ( compare_q[6]);
+    // C3: leaf equations are combinational; constant-folded action is registered.
+    always_comb begin : p_c3_onehot_leaf_comb
+        leaf_w[0] = (~compare_q[0]) & (~compare_q[1]) & (~compare_q[3]);
+        leaf_w[1] = (~compare_q[0]) & (~compare_q[1]) & ( compare_q[3]);
+        leaf_w[2] = (~compare_q[0]) & ( compare_q[1]) & (~compare_q[4]);
+        leaf_w[3] = (~compare_q[0]) & ( compare_q[1]) & ( compare_q[4]);
+        leaf_w[4] = ( compare_q[0]) & (~compare_q[2]) & (~compare_q[5]);
+        leaf_w[5] = ( compare_q[0]) & (~compare_q[2]) & ( compare_q[5]);
+        leaf_w[6] = ( compare_q[0]) & ( compare_q[2]) & (~compare_q[6]);
+        leaf_w[7] = ( compare_q[0]) & ( compare_q[2]) & ( compare_q[6]);
     end
 
-    // C4: constant-folded one-hot action encoder.
-    always_ff @(posedge clk_i) begin : p_c4_action_encode
-        decision_o[0] <= |(leaf_q & BUY_MASK);
-        decision_o[1] <= |(leaf_q & SELL_MASK);
+    always_ff @(posedge clk_i) begin : p_c3_action_register
+        decision_o[0] <= |(leaf_w & BUY_MASK);
+        decision_o[1] <= |(leaf_w & SELL_MASK);
     end
 
-    // Four ownership FFs align source FDRE/Q at N with output FDRE/Q at N+4.
+    // Three ownership FFs align source FDRE/Q at N with output FDRE/Q at N+3.
     always_ff @(posedge clk_i) begin : p_valid_pipeline
         if (rst_i) begin
             valid_c1_q       <= 1'b0;
             valid_c2_q       <= 1'b0;
-            valid_c3_q       <= 1'b0;
             decision_valid_o <= 1'b0;
         end else begin
             valid_c1_q       <= feature_valid_i;
             valid_c2_q       <= valid_c1_q;
-            valid_c3_q       <= valid_c2_q;
-            decision_valid_o <= valid_c3_q;
+            decision_valid_o <= valid_c2_q;
         end
     end
 
