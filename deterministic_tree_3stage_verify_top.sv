@@ -2,18 +2,18 @@
 `default_nettype none
 
 // ============================================================================
-// Implemented source-FDRE wrapper for deterministic_tree_4stage.
+// Implemented source-FDRE wrapper for deterministic_tree_3stage.
 //
 // The eight test vectors are launched by real fabric registers inside the
 // implemented netlist.  The measured latency contract is therefore:
 //
 //   source_valid_o/source_index_o Q at cycle N
-//       -> decision_valid_o/decision_o Q at cycle N+4.
+//       -> decision_valid_o/decision_o Q at cycle N+3.
 //
 // The testbench drives only clk_i and rst_async_i; it never changes feature
 // inputs on a DUT clock edge.
 // ============================================================================
-module deterministic_tree_4stage_verify_top (
+module deterministic_tree_3stage_verify_top (
     input  wire        clk_i,
     input  wire        rst_async_i,
 
@@ -167,7 +167,7 @@ module deterministic_tree_4stage_verify_top (
         end
     end
 
-    deterministic_tree_4stage u_core (
+    deterministic_tree_3stage u_core (
         .clk_i            (core_clk),
         .rst_i            (rst_sync3_q),
         .feature_valid_i  (source_valid_o),
