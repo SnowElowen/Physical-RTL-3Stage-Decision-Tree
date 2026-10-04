@@ -1,7 +1,7 @@
 `timescale 1ps / 1ps
 `default_nettype none
 
-module tb_deterministic_tree_4stage_verify_top;
+module tb_deterministic_tree_3stage_verify_top;
 
     localparam logic [1:0] HOLD = 2'b00;
     localparam logic [1:0] BUY  = 2'b01;
@@ -30,7 +30,7 @@ module tb_deterministic_tree_4stage_verify_top;
     // 322.56 MHz: 3.1002 ns period.
     always #1550.1 clk_i = ~clk_i;
 
-    deterministic_tree_4stage_verify_top dut (
+    deterministic_tree_3stage_verify_top dut (
         .clk_i             (clk_i),
         .rst_async_i       (rst_async_i),
         .sample_clk_o      (sample_clk_o),
@@ -106,7 +106,7 @@ module tb_deterministic_tree_4stage_verify_top;
             end
 
             // Record the implemented source-Q event and schedule its result
-            // exactly four sampled core-clock cycles later.
+            // exactly three sampled core-clock cycles later.
             if (source_valid_o === 1'b1) begin
                 if (source_index_o !== launch_seen[3:0]) begin
                     $display("SOURCE ORDER ERROR cycle=%0d got_index=%0d expected_index=%0d",
@@ -116,9 +116,9 @@ module tb_deterministic_tree_4stage_verify_top;
                     errors = errors + 1;
                 end
 
-                expected_valid[sample_cycle + 4]  = 1'b1;
-                expected_action[sample_cycle + 4] = action_for_index(source_index_o);
-                expected_index[sample_cycle + 4]  = source_index_o;
+                expected_valid[sample_cycle + 3]  = 1'b1;
+                expected_action[sample_cycle + 3] = action_for_index(source_index_o);
+                expected_index[sample_cycle + 3]  = source_index_o;
                 launch_seen = launch_seen + 1;
             end else if (source_valid_o !== 1'b0) begin
                 $display("SOURCE VALID X/Z cycle=%0d value=%b",
@@ -140,8 +140,8 @@ module tb_deterministic_tree_4stage_verify_top;
 
         if ((launch_seen == 8) && (checked == 8) && (errors == 0)) begin
             $display("");
-            $display("PASS: 8/8 leaves matched the exact four-cycle source-Q contract");
-            $display("Latency = 4 cycles x 3.1002 ns = 12.4008 ns");
+            $display("PASS: 8/8 leaves matched the exact three-cycle source-Q contract");
+            $display("Latency = 3 cycles x 3.1002 ns = 9.3006 ns");
             $display("");
             $finish;
         end else begin
